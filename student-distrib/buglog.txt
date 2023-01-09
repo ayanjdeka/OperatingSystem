@@ -1,0 +1,177 @@
+Buglog
+    Checkpoint 1
+        Bug: bootloop
+        Symptoms:after writing gdt and idt, os was stuck in a bootloop
+        Duration: 2 hours
+        Solution: forgot to load idt in boot.s and idt init needed to be moved under pic init
+        Status: fixed
+
+        Bug: keyboard showing stack segment fault
+        Symptoms: stack segment fault occured as soon as os booted
+        Duration: 1 hours
+        Solution: idt for rtc was setup to wrong index in idt table
+        Status: fixed
+
+        Bug: general protection exception
+        Symptoms: rtc would raise a general protection exception when os booted
+        Duration: 3 hours
+        Solution: assembly linkage was incorrect for the rtc
+        Status: Fixed
+
+        Bug: keyboard priting wrong
+        Symptoms: wierd character printed from keyboard
+        Duration: 1 hours
+        Solution: bit mask the scancode for the key pressed to see if pressed
+        Status: Fixed
+
+        Bug: kernel crash
+        Symptoms: Kernel would close when paging was being enabled
+        Duration: 3 hours
+        Solution: none
+        Status: in progress
+
+    Checkpoint 2
+        Bug: keyboard
+        Symptoms:backspace was setting cursor spot to a spot that had no character
+        Duration: 30 min
+        Solution: create if statment for when the cursor is in secnd line and needs to go to first
+        Status: fixed
+
+        Bug: keyboard
+        Symptoms:backspace was creating a page faults
+        Duration: 30 min
+        Solution: refrencing a weird memory location
+        Status: fixed
+
+        Bug: scrolling
+        Symptoms:scrolling made cursor disappear
+        Duration: 30 min
+        Solution: update cursor was not working as we intended
+        Status: fixed
+
+        Bug: File system
+        Symptoms: page fualt when booting the os
+        Duration: 30 min
+        Solution: clear screen when running tests
+        Status: fixed
+
+        Bug: terminal
+        Symptoms: extern variable kept being defined twice although it was defined once
+        Duration: 30 min
+        Solution: create two twin structs in seperate .c files and then make a extern variable
+        Status: fixed
+
+        Bug: File Systems passes in Zero
+        Symptoms: Dentry value passed into read dentry by index never has values initialized
+        Duration: 5 hours
+        Solution: allocate dentry beforehand and then pass in the address 
+        Status: fixed
+
+        Bug: When testing the different rtc frequencies, the hashtag was writing as the same pace
+        Symptoms: When writing the new frequency, I was writing to the wrong port
+        Duration: 30 mina
+        Solution: I wrote to the same port was when I initialized it
+        Status: fixed
+    Checkpoint 3: 
+        Bug: Pagefaulting when using any function that calls HALT
+        Symptoms: When calling functions that use halt (testprint, ls, etc.), things would print but once halt was 
+        called it would pagefault in the halt function. 
+        Solution: Incorrect stack management was the reason why this function failed, the stack pushes in execute should happen
+        after the tss switch, but instead it occured at near the middle, as such, the stack is no longer the same and will not be 
+        restored to the correct location
+        Status; Fixed
+
+        Bug: Only a shell within a shell can call executables
+        Symptoms: the base shell always pagefaults whenever an executable is called, however, if a shell within a shell is called and 
+        an executable is called on the recursive shell, it works properly. 
+        Solution: Incorrect setting of PCD addresses and PCD parent addresses, forgot it should be current + 1 rather than current, and each parent pointer 
+        is actually the grandparent 
+
+        Bug: Ls only prints "." and then freezes
+        Symptoms: LS Only prints "." and then our terminal is unusable
+        Solution: Incorrect return values for read, ended up reading from fd = 0, which is stdin, which gets us caught in an 
+        infinite loop and stops program from running 
+
+        Bug: Bootloop when halting base shell 
+        Symptoms: Bootloop occurs when the base shell is exited. 
+        Solution: Incorrect Setting of the Kernel stack and parent ebp and esp values within execute and incorrect restoration of those 
+        parent ebp and esp values within halt caused the virtual address of the "parent shell" to be when the Kernel stack actually starts
+
+        Bug: Pagefaulting when calling Syserr 5
+        Symptoms: Syserr 5 always pagefaults after calling fd 7
+        Solution: I honestly don't know how this bug got fixed. It probably has to do with the magic-number mixup between the 
+        process array and the FD array, but I am not sure. I literally remade the file without doing anything and the bug magically
+        fixed itself
+
+        Bug: ls always reads directory twice 
+        Symptoms: All Directory reads print twice
+        Solution: remove the putc in the read_dir and use use terminal write for the entire thing. 
+    Checkpoint 4:
+        Bug: Counter not working and Pagefaulting
+        Symptoms: Counter pagefaults when called, alternative fix always prints nothing.
+        Solution: Read_data implemented incorrectly, When a datablock is over 4096 in length, the iterator that changes to the next datablock 
+        should change over to the next one with a preincrement. However, we had a postincrement that led to the file not being read correctly. 
+
+        Bug: pingpong prints twice
+        Symptoms: Pingpong only prints two lines
+        Solution: Remember to reenable interrupts before the RTC read function, as interrupts are suppressed mid system call
+
+        Bug: Fish only prints every other frame
+        Symptoms: Fish prints only every other character
+        Solution: Incorrect implementation of the file descriptor array in read data, having to switch between multiple reads of different
+        files causes bugs as only a single one of those files is actually reading, while the other is just returning nulls. What eventually happens
+        is tat the output is every other char of frame0.txt. Through utilizing a PCB struct within the file_systems, we sidestep this problem
+        by directly reading from the FD array. 
+
+        Bug: Cat repeatedly prints
+        Symptoms: Cat never actually halts, and just repeatedly prints
+        Solution: Same as the Fish solution. Had incorrect implementation of FD array and did not correctly keep track of the current location in the file
+
+        Bug: Passed in arguments with pcb was not parsed correctly
+        Symptoms: Argument had cat involved within the arguments 
+        Solution: This was a simple fix, as I had to reparse the arguments with the pcb. Once the command that is passed in sees a space, I would only parse the restoration
+        of the command into the arguments in pcb. This would make sure cat is not invlved within it. 
+
+        Bug: Terminal Write was not writing correctly and printing the top lines when the cat function was called.
+        Symptoms: It was just printing the first line.
+        Solution: This was a solution that had to do with terminal write. We readjusted the terminal write to be more simple and only stop when it sees /0/
+
+    Checkpoint 5:
+        Bug: Terminals 2 and 3 not printing anyhing on start up when pressing alt f2/f3
+        Symptoms: blank screen
+        Solution: mapping and copying from b8 to b9/ba/bb was flip flopped in meme copy call
+
+        Bug: Terminal not being able to write anything to other terminals after a whie of typing
+        Symptoms: not being able to type in terminals
+        Solution: create a terminal struct to keep track of each terminals keyboard buffer and cursor postion to store and restore screen
+
+        Bug: General Protecntion fault for keyboard
+        Symptoms: keyboard would produce general protection error after pressing enter when buffer is nearly or is full
+        Solution: had to keep track of the variable n which is how many byte written on buffer.
+
+        Bug: Only one shell was being opened for all three terminals
+        Symptoms: no startup for 2 other terminals however still able to run commands
+        Solution: Need an intterrup to start up shell for the other terminals since for loop does not work since execute shell does not return
+
+        Bug: Only one shell was being opened for all three terminals
+        Symptoms: no startup for 2 other terminals however still able to run commands
+        Solution: Need an intterrup to start up shell for the other terminals since for loop does not work since execute shell does not return
+
+        Bug: **FIXED ON LATE COMMIT THAT WAS NOT COMMITED BECAUSE IT WAS NOT GOING TO GET POINTS**: Switching terminals during a mid-task execution causes 
+        the halt to call on the incorrect terminal.
+        Symptoms: PID proccesses does not necessarily terminate correctly
+        Solution: Implement scheudler with a insta-start on 3, as well as check the currently active and currently executing terminals.
+
+        Bug: **FIXED ON LATE COMMIT** Pingpong operates extremely slowly
+        Symptoms: PingPong operates slowly
+        Solution: Correct setting paging causes memcpy to not run as frequently
+
+
+
+
+
+
+        
+
+        
+        
